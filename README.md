@@ -1,46 +1,46 @@
 # Cerberus-GPT
 
-[Inserta aquí un logo o un banner visual impactante]
+[Insert a striking logo or visual banner here]
 
-Un guardián de tres cabezas para el ecosistema digital. Cerberus-GPT es un framework de IA modular diseñado para ofrecer una visión completa y equilibrada de la ciberseguridad, integrando capacidades de análisis, simulación de ataques y recomendaciones de defensa en una sola herramienta.
+A three-headed guardian for the digital ecosystem. Cerberus-GPT is a modular AI framework designed to offer a complete and balanced view of cybersecurity, integrating analysis capabilities, attack simulation and defense recommendations in a single tool.
 
-## 🐕‍🦺 Las Tres Cabezas de Cerberus
+## 🐕‍🦺 The Three Heads of Cerberus
 
--   **Cabeza 1: Análisis (The Watcher):** Analiza profundamente código, redes, logs y datos en busca de vulnerabilidades, patrones anómalos y riesgos potenciales. Utiliza técnicas de procesamiento de lenguaje natural (NLP) y aprendizaje automático para comprender el contexto y priorizar amenazas.
--   **Cabeza 2: Generación de Ataques (The Attacker):** Simula de forma ética y controlada una amplia gama de ciberataques. Desde ingeniería social y fuzzing hasta exploits complejos, esta cabeza ayuda a probar la resiliencia de los sistemas antes de que un atacante real lo haga.
--   **Cabeza 3: Defensa (The Guardian):** Basándose en los hallazgos de las otras dos cabezas, genera estrategias de defensa proactivas. Propone parches, configuraciones de seguridad robustas, reglas de firewall, y planes de respuesta a incidentes personalizados.
+- **Head 1: Analysis (The Watcher):** Deeply analyzes code, networks, logs and data in search of vulnerabilities, anomalous patterns and potential risks. It uses natural language processing (NLP) and machine learning techniques to understand context and prioritize threats.
+- **Head 2: Attack Generation (The Attacker):** Simulates a wide range of cyberattacks in an ethical and controlled manner. From social engineering and fuzzing to complex exploits, this head helps test the resilience of systems before a real attacker does.
+- **Head 3: Defense (The Guardian):** Based on the findings of the other two heads, generate proactive defense strategies. It proposes patches, robust security configurations, firewall rules, and customized incident response plans.
 
-## 🚀 Características Clave
+## 🚀 Key Features
 
--   **Arquitectura Modular:** Cada "cabeza" puede operar de forma independiente o en conjunto.
--   **Interfaz Unificada:** Un único punto de acceso para controlar todas las funcionalidades.
--   **Motor de IA Avanzado:** Potenciado por modelos de lenguaje de última generación.
--   **Enfoque Ético:** Diseñado para la ofensiva y la defensa en ciberseguridad (ciberseguridad ética y "red teaming").
+- **Modular Architecture:** Each "head" can operate independently or together.
+- **Unified Interface:** A single access point to control all functionalities.
+- **Advanced AI Engine:** Powered by next-generation language models.
+- **Ethical Approach:** Designed for offensive and defense in cybersecurity (ethical cybersecurity and "red teaming").
 
-## 📦 Instalación
+## 📦 Installation
 
 ```bash
-# Instrucciones de instalación próximamente...
+# Installation instructions coming soon...
 git clone https://github.com/tu-usuario/Cerberus-GPT.git
 cd Cerberus-GPT
 pip install -r requirements.txt
 
-## 🛠️ Uso Rápido
+## 🛠️ Quick Use
 
-# Ejemplo de cómo interactuar con las cabezas
+# Example of how to interact with heads
 from cerberus_gpt import Cerberus
 
-# Inicializar al guardián
+# Initialize the guardian
 guardian = Cerberus()
 
-# 1. Análisis de un código fuente
+# 1. Source code analysis
 vulnerabilities = guardian.analyze_code('path/to/your/code.py')
 print(vulnerabilities)
 
-# 2. Simular un ataque sobre una IP
+# 2. Simulate an attack on an IP
 attack_report = guardian.simulate_attack('192.168.1.1', technique='sql_injection')
 print(attack_report)
 
-# 3. Recomendaciones de defensa
+# 3. Defense recommendations
 defense_plan = guardian.get_defense_plan(attack_report)
 print(defense_plan)
