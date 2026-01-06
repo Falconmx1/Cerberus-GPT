@@ -24,3 +24,23 @@ Un guardián de tres cabezas para el ecosistema digital. Cerberus-GPT es un fram
 git clone https://github.com/tu-usuario/Cerberus-GPT.git
 cd Cerberus-GPT
 pip install -r requirements.txt
+
+## 🛠️ Uso Rápido
+
+# Ejemplo de cómo interactuar con las cabezas
+from cerberus_gpt import Cerberus
+
+# Inicializar al guardián
+guardian = Cerberus()
+
+# 1. Análisis de un código fuente
+vulnerabilities = guardian.analyze_code('path/to/your/code.py')
+print(vulnerabilities)
+
+# 2. Simular un ataque sobre una IP
+attack_report = guardian.simulate_attack('192.168.1.1', technique='sql_injection')
+print(attack_report)
+
+# 3. Recomendaciones de defensa
+defense_plan = guardian.get_defense_plan(attack_report)
+print(defense_plan)
