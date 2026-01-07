@@ -1,49 +1,32 @@
 # cerberus_gpt/heads/attacker.py
+import re
+import requests
 from typing import Dict, Any, List
+from urllib.parse import urljoin, urlparse, parse_qs
 
 class Attacker:
-    """
-    Cabeza 2: El Agresor (The Attacker).
-    
-    Encargada de simular de forma ética y controlada una amplia gama
-    de ciberataques para probar la resiliencia de los sistemas.
-    """
+    """Cabeza 2: El Agresor (The Attacker)."""
     
     def __init__(self, model: str, api_key: str):
-        """
-        Inicializa la cabeza de ataque.
-        
-        Args:
-            model (str): El nombre del modelo LLM a utilizar.
-            api_key (str): La clave API para el servicio LLM.
-        """
         self.model = model
         self.api_key = api_key
-        # Aquí iría la inicialización del cliente LLM y herramientas de ataque
+        # self.client = OpenAI(api_key=api_key) if api_key else None # Para uso futuro con LLM
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Cerberus-GPT/1.0 (Security Testing Tool)'
+        })
         print("  - Cabeza de Ataque (Attacker) inicializada.")
 
     def run(self, target: str, technique: str, **kwargs) -> Dict[str, Any]:
-        """
-        Punto de entrada principal para ejecutar una simulación de ataque.
-        Despacha la tarea al método especializado correspondiente.
-        
-        Args:
-            target (str): El objetivo del ataque (URL, IP, hash, etc.).
-            technique (str): La técnica de ataque a simular.
-            **kwargs: Argumentos adicionales para la técnica (ej. payloads, usernames).
-        
-        Returns:
-            Dict[str, Any]: Un reporte detallado del ataque simulado.
-        """
+        """Punto de entrada principal para ejecutar una simulación de ataque."""
         print(f"  -> Simulando ataque con técnica: {technique}")
         
-        # Mapeo de nombres de técnicas a métodos
         attack_map = {
             "sql_injection": self._simulate_sql_injection,
             "xss": self._simulate_xss,
-            "brute_force_ssh": self._simulate_brute_force_ssh,
-            "directory_traversal": self._simulate_directory_traversal,
-            "password_cracking": self._simulate_password_cracking,
+            "brute_force_ssh": self._simulate_brute_force_ssh, # Mantenemos el esqueleto
+            "directory_traversal": self._simulate_directory_traversal, # Mantenemos el esqueleto
+            "password_cracking": self._simulate_password_cracking, # Mantenemos el esqueleto
         }
 
         attack_function = attack_map.get(technique.lower())
@@ -54,110 +37,145 @@ class Attacker:
 
     def _simulate_sql_injection(self, target_url: str, payload: str = "' OR '1'='1") -> Dict[str, Any]:
         """
-        Simula un ataque de inyección SQL.
-        
-        Lógica real a implementar:
-        1. Enviar una petición GET/POST con el payload a la URL.
-        2. Analizar la respuesta en busca de errores de SQL (ej. "syntax error", "mysql_fetch").
-        3. Usar un LLM para interpretar la respuesta y confirmar la vulnerabilidad.
-        4. (Opcional) Intentar extraer datos con payloads más avanzados como UNION SELECT.
+        Simula un ataque de inyección SQL probando el payload en parámetros GET.
         """
-        # LÓGICA DE ATAQUE REAL IRÍA AQUÍ
-        # Ejemplo de resultado:
-        is_vulnerable = True # Simulación de un resultado positivo
-        
-        return {
-            "status": "completed",
-            "technique": "SQL Injection",
-            "target": target_url,
-            "payload_used": payload,
-            "is_vulnerable": is_vulnerable,
-            "evidence": "La respuesta del servidor incluyó un error de SQL: 'You have an error in your SQL syntax...'",
-            "recommendation": "Use sentencias preparadas (prepared statements) o un ORM para sanitizar las entradas del usuario."
-        }
+        print(f"    -> Probando payload SQLi: {payload}")
+        try:
+            # Parseamos la URL para encontrar los parámetros
+            parsed_url = urlparse(target_url)
+            query_params = parse_qs(parsed_url.query)
+
+            if not query_params:
+                return {"status": "info", "message": "No se encontraron parámetros GET para inyectar en la URL."}
+
+            # Iteramos sobre cada parámetro para probar el payload
+            for param in query_params:
+                original_params = parsed_url.query
+                # Creamos una nueva query con el payload inyectado en el parámetro actual
+                injected_params = query_params.copy()
+                injected_params[param] = [payload]
+                
+                # Reconstruimos la URL con el payload
+                from urllib.parse import urlencode
+                new_query = urlencode(injected_params, doseq=True)
+                attack_url = parsed_url._replace(query=new_query).geturl()
+
+                # Hacemos la petición
+                response = self.session.get(attack_url, timeout=10)
+
+                # Analizamos la respuesta en busca de errores SQL comunes
+                sql_errors = [
+                    "you have an error in your sql syntax",
+                    "warning: mysql_fetch_assoc()",
+                    "unclosed quotation mark",
+                    "microsoft ole db provider for odbc drivers error"
+                ]
+                
+                is_vulnerable = any(err in response.text.lower() for err in sql_errors)
+                
+                if is_vulnerable:
+                    return {
+                        "status": "completed",
+                        "technique": "SQL Injection",
+                        "target": target_url,
+                        "payload_used": payload,
+                        "vulnerable_parameter": param,
+                        "is_vulnerable": True,
+                        "evidence": f"La respuesta contenía un error de SQL común al inyectar en el parámetro '{param}'.",
+                        "recommendation": "Use sentencias preparadas (prepared statements) o un ORM para sanitizar las entradas del usuario."
+                    }
+
+            # Si no se encontró vulnerabilidad en ningún parámetro
+            return {
+                "status": "completed",
+                "technique": "SQL Injection",
+                "target": target_url,
+                "is_vulnerable": False,
+                "message": "No se detectaron vulnerabilidades de SQL Injection con el payload proporcionado."
+            }
+
+        except requests.exceptions.RequestException as e:
+            return {"status": "error", "message": f"Error de red: {e}"}
+        except Exception as e:
+            return {"status": "error", "message": f"Error inesperado: {e}"}
 
     def _simulate_xss(self, target_url: str, payload: str = "<script>alert('XSS')</script>") -> Dict[str, Any]:
         """
-        Simula un ataque de Cross-Site Scripting (XSS).
-        
-        Lógica real a implementar:
-        1. Inyectar el payload en un parámetro de la URL.
-        2. Usar una herramienta de headless browsing (como Selenium) para renderizar la página.
-        3. Verificar si el script se ejecuta (ej. comprobando si aparece un alert).
+        Simula un ataque de XSS reflejado probando el payload en parámetros GET.
         """
-        # LÓGICA DE ATAQUE REAL IRÍA AQUÍ
-        is_vulnerable = True
-        
-        return {
-            "status": "completed",
-            "technique": "Cross-Site Scripting (XSS)",
-            "target": target_url,
-            "payload_used": payload,
-            "is_vulnerable": is_vulnerable,
-            "evidence": "El payload <script>alert('XSS')</script> se reflejó y ejecutó en el navegador del cliente.",
-            "recommendation": "Escape todos los datos de entrada del usuario antes de renderizarlos en HTML. Utilice una librería de sanitización."
-        }
+        print(f"    -> Probando payload XSS: {payload}")
+        try:
+            # La lógica es similar a la de SQLi, pero buscando el payload en la respuesta
+            parsed_url = urlparse(target_url)
+            query_params = parse_qs(parsed_url.query)
 
+            if not query_params:
+                return {"status": "info", "message": "No se encontraron parámetros GET para inyectar en la URL."}
+            
+            for param in query_params:
+                injected_params = query_params.copy()
+                injected_params[param] = [payload]
+                
+                from urllib.parse import urlencode
+                new_query = urlencode(injected_params, doseq=True)
+                attack_url = parsed_url._replace(query=new_query).geturl()
+                
+                response = self.session.get(attack_url, timeout=10)
+                
+                # Comprobamos si el payload se refleja SIN escapar en el HTML de la respuesta
+                if payload in response.text:
+                    return {
+                        "status": "completed",
+                        "technique": "Cross-Site Scripting (XSS)",
+                        "target": target_url,
+                        "payload_used": payload,
+                        "vulnerable_parameter": param,
+                        "is_vulnerable": True,
+                        "evidence": f"El payload se reflejó sin escapar en la respuesta al inyectar en el parámetro '{param}'.",
+                        "recommendation": "Escape todos los datos de entrada del usuario antes de renderizarlos en HTML. Utilice una librería de sanitización."
+                    }
+            
+            return {
+                "status": "completed",
+                "technique": "Cross-Site Scripting (XSS)",
+                "target": target_url,
+                "is_vulnerable": False,
+                "message": "No se detectaron vulnerabilidades de XSS reflejado con el payload proporcionado."
+            }
+
+        except requests.exceptions.RequestException as e:
+            return {"status": "error", "message": f"Error de red: {e}"}
+        except Exception as e:
+            return {"status": "error", "message": f"Error inesperado: {e}"}
+
+    # --- Métodos de ataque que mantendremos como esqueletos por ahora ---
     def _simulate_brute_force_ssh(self, target_ip: str, usernames: List[str] = ["root", "admin"], password_list: List[str] = ["123456", "password", "admin"]) -> Dict[str, Any]:
-        """
-        Simula un ataque de fuerza bruta contra un servicio SSH.
-        
-        Lógica real a implementar:
-        1. Iterar sobre la lista de usuarios y contraseñas.
-        2. Intentar una conexión SSH para cada combinación.
-        3. Parar al encontrar una credencial válida o al agotar la lista.
-        """
-        # LÓGICA DE ATAQUE REAL IRÍA AQUÍ
-        credentials_found = {"username": "admin", "password": "password"} # Simulación
-        
+        print("    -> (Simulación) La lógica real de fuerza bruta SSH requiere librerías como 'paramiko' y es más compleja.")
         return {
-            "status": "completed",
+            "status": "simulated",
             "technique": "SSH Brute Force",
             "target": target_ip,
-            "credentials_found": credentials_found,
-            "attempts_made": len(usernames) * len(password_list),
-            "recommendation": "Deshabilite el login por contraseña y use únicamente claves SSH. Implemente un sistema como Fail2Ban para bloquear IPs después de múltiples intentos fallidos."
+            "credentials_found": {"username": "admin", "password": "password"},
+            "recommendation": "Deshabilite el login por contraseña y use únicamente claves SSH."
         }
 
     def _simulate_directory_traversal(self, target_url: str, payload: str = "../../../etc/passwd") -> Dict[str, Any]:
-        """
-        Simula un ataque de Path/Directory Traversal.
-        
-        Lógica real a implementar:
-        1. Inyectar el payload en un parámetro que carga archivos (ej. ?file=).
-        2. Comprobar si la respuesta contiene el contenido del archivo solicitado.
-        """
-        # LÓGICA DE ATAQUE REAL IRÍA AQUÍ
-        is_vulnerable = True
-        
+        print("    -> (Simulación) La lógica real es similar a SQLi/XSS, pero buscando contenido de archivos conocidos en la respuesta.")
         return {
-            "status": "completed",
+            "status": "simulated",
             "technique": "Directory Traversal",
             "target": target_url,
-            "payload_used": payload,
-            "is_vulnerable": is_vulnerable,
+            "is_vulnerable": True,
             "evidence": "La respuesta del servidor devolvió el contenido del archivo /etc/passwd.",
-            "recommendation": "Nunca confíe en la entrada del usuario para construir rutas de archivo. Mantenga un mapa de archivos permitidos y valide la entrada contra él."
+            "recommendation": "Nunca confíe en la entrada del usuario para construir rutas de archivo."
         }
 
     def _simulate_password_cracking(self, hash_to_crack: str, hash_type: str = "sha256", wordlist: str = "rockyou.txt") -> Dict[str, Any]:
-        """
-        Simula el crackeo de un hash de contraseña.
-        
-        Lógica real a implementar:
-        1. Cargar la wordlist.
-        2. Iterar sobre cada palabra, hashearla con el algoritmo indicado y compararla con el hash objetivo.
-        3. (Avanzado) Usar herramientas como Hashcat para acelerar el proceso.
-        """
-        # LÓGICA DE ATAQUE REAL IRÍA AQUÍ
-        cracked_password = "P@ssw0rd123" # Simulación
-        
+        print("    -> (Simulación) La lógica real requiere 'hashcat' o un bucle de hashing lento.")
         return {
-            "status": "completed",
+            "status": "simulated",
             "technique": "Password Cracking",
             "target": hash_to_crack,
-            "hash_type": hash_type,
-            "wordlist_used": wordlist,
-            "cracked_password": cracked_password,
+            "cracked_password": "P@ssw0rd123",
             "recommendation": "Use hashes lentos y con sal (salt) como bcrypt, scrypt o Argon2 en lugar de algoritmos rápidos como SHA-256 o MD5."
         }
